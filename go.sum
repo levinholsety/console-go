@@ -1,2 +1,4 @@
-github.com/golang/sys v0.0.0-20191128015809-6d18c012aee9 h1:kt6EMSxOsEL5jt5I1ztbBFZy8tEyWDeSbEKCh9CS92k=
-github.com/golang/sys v0.0.0-20191128015809-6d18c012aee9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+github.com/levinholsety/common-go v0.0.0-20191204021126-baa3f4159084 h1:Ggbc3MeekLT3uRXRksJfLtNUGLz0ULTy2aTo6BzJgtQ=
+github.com/levinholsety/common-go v0.0.0-20191204021126-baa3f4159084/go.mod h1:8g+nVas41Hg3evaqjneZuF4mJhQ79wylYnS3eBcmOhY=
+golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9 h1:ZBzSG/7F4eNKz2L3GE9o300RX0Az1Bw5HF7PDraD+qU=
+golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
