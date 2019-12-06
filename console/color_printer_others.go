@@ -4,6 +4,7 @@ package console
 
 import (
 	"fmt"
+	"os"
 )
 
 // Colors
@@ -46,7 +47,6 @@ func NewColorPrinter(bgColor Color, fgColor Color) *ColorPrinter {
 	}
 }
 
-// Printf prints string to standard output.
-func (p *ColorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
-	return fmt.Printf("\x1b[%d;%dm%s\x1b[0m", p.bgColor, p.fgColor, fmt.Sprintf(format, a...))
+func (p *ColorPrinter) Write(value []byte) (n int, err error) {
+	return os.Stdout.Write([]byte(fmt.Sprintf("\x1b[%d;%dm%s\x1b[0m", p.bgColor, p.fgColor, string(value))))
 }

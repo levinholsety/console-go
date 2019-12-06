@@ -1,7 +1,7 @@
 package console
 
 import (
-	"fmt"
+	"os"
 	"syscall"
 
 	"golang.org/x/sys/windows"
@@ -68,10 +68,9 @@ func NewColorPrinter(bgColor Color, fgColor Color) *ColorPrinter {
 	}
 }
 
-// Printf prints string to standard output.
-func (p *ColorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
+func (p *ColorPrinter) Write(value []byte) (n int, err error) {
 	setConsoleTextAttribute(stdout, uintptr(p.bgColor|p.fgColor))
-	n, err = fmt.Printf(format, a...)
+	n, err = os.Stdout.Write(value)
 	setConsoleTextAttribute(stdout, uintptr(defaultTextAttributes))
 	return
 }

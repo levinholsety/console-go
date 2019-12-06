@@ -1,6 +1,8 @@
 package console
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Color represents a color in console.
 type Color int
@@ -16,9 +18,14 @@ type ColorPrinter struct {
 	fgColor int
 }
 
+// Printf prints string to standard output.
+func (p *ColorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
+	return p.Write([]byte(fmt.Sprintf(format, a...)))
+}
+
 // Print prints string to standard output.
 func (p *ColorPrinter) Print(a ...interface{}) (n int, err error) {
-	return p.Printf("%v", a...)
+	return p.Write([]byte(fmt.Sprint(a...)))
 }
 
 // Println prints string to standard output.
