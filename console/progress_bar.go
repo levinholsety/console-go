@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/levinholsety/common-go/commtime"
+	"github.com/levinholsety/common-go/timeutil"
 )
 
 // ProgressBar can print progress bar in console.
@@ -29,5 +29,5 @@ func (p *ProgressBar) Progress(current int) {
 	progressLen := current * p.Width / p.Total
 	progress := strings.Repeat("=", progressLen)
 	blanks := strings.Repeat(" ", p.Width-progressLen)
-	fmt.Printf("\r[%s%s] %d%% %s", progress, blanks, current*100/p.Total, commtime.FormatDuration(time.Now().Sub(p.epoch)))
+	fmt.Printf("\r[%s%s] %d%% %s", progress, blanks, current*100/p.Total, timeutil.FormatDuration(time.Now().Sub(p.epoch)))
 }
