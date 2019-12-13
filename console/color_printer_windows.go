@@ -1,6 +1,7 @@
 package console
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 
@@ -40,7 +41,8 @@ var (
 func init() {
 	info := new(windows.ConsoleScreenBufferInfo)
 	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(stdout), info); err != nil {
-		panic(err)
+		fmt.Println(fmt.Errorf("color printer init failed: %w", err))
+		return
 	}
 	defaultTextAttributes = info.Attributes
 }
@@ -48,7 +50,7 @@ func init() {
 func setConsoleTextAttribute(hConsoleOutput uintptr, wAttributes uintptr) {
 	r, _, err := procSetConsoleTextAttribute.Call(hConsoleOutput, wAttributes)
 	if r == 0 {
-		panic(err)
+		fmt.Println(fmt.Errorf("set printer color failed: %w", err))
 	}
 }
 
