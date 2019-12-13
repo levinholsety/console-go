@@ -30,7 +30,15 @@ const (
 
 var (
 	stdout                = uintptr(syscall.Stdout)
-	defaultTextAttributes uint16
+	defaultTextAttributes = func() uint16 {
+		info := new(windows.ConsoleScreenBufferInfo)
+		if err := windows.GetConsoleScreenBufferInfo(windows.Handle(stdout), info); err != nil {
+			err = fmt.Errorf("color printer init failed: %w", err)
+			fmt.Println("error:", err)
+			return 0x07
+		}
+		return info.Attributes
+	}()
 )
 
 var (
@@ -38,20 +46,12 @@ var (
 	procSetConsoleTextAttribute = kernel32.NewProc("SetConsoleTextAttribute")
 )
 
-func init() {
-	info := new(windows.ConsoleScreenBufferInfo)
-	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(stdout), info); err != nil {
-		fmt.Println(fmt.Errorf("color printer init failed: %w", err))
-		return
-	}
-	defaultTextAttributes = info.Attributes
-}
-
-func setConsoleTextAttribute(hConsoleOutput uintptr, wAttributes uintptr) {
+func setConsoleTextAttribute(hConsoleOutput uintptr, wAttributes uintptr) error {
 	r, _, err := procSetConsoleTextAttribute.Call(hConsoleOutput, wAttributes)
 	if r == 0 {
-		fmt.Println(fmt.Errorf("set printer color failed: %w", err))
+		return fmt.Errorf("set printer color failed: %w", err)
 	}
+	return nil
 }
 
 // NewColorPrinter creates a new ColorPrinter instance.
@@ -71,8 +71,12 @@ func NewColorPrinter(bgColor Color, fgColor Color) *ColorPrinter {
 }
 
 func (p *ColorPrinter) Write(value []byte) (n int, err error) {
-	setConsoleTextAttribute(stdout, uintptr(p.bgColor|p.fgColor))
-	n, err = os.Stdout.Write(value)
+	if err := setConsoleTextAttribute(stdout, uintptr(p.bgColor|p.fgColor)); err != nil {
+		fmt.Println("error:", err)
+	}
+	if n, err = os.Stdout.Write(value); err != nil {
+		return
+	}
 	setConsoleTextAttribute(stdout, uintptr(defaultTextAttributes))
 	return
 }
