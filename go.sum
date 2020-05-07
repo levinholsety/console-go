@@ -1,4 +1,2 @@
-github.com/levinholsety/common-go v0.0.0-20200325020323-6a3517db3d36 h1:ty0ZvQgREMCx+KW71Os8j2x9RqvOCLCWiNfYKFVLMx4=
-github.com/levinholsety/common-go v0.0.0-20200325020323-6a3517db3d36/go.mod h1:8g+nVas41Hg3evaqjneZuF4mJhQ79wylYnS3eBcmOhY=
 golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd h1:xhmwyvizuTgC2qz7ZlMluP20uW+C3Rm0FD/WLDX8884=
 golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
