@@ -13,15 +13,23 @@ import (
 // SpeedCalculator represents a function to calculate speed with total value and elapsed time.
 type SpeedCalculator func(n int64, elapsed time.Duration) string
 
-// NewProgressBar creates an instance of ProgressBar.
-func NewProgressBar(total int64) (pb *ProgressBar) {
-	pb = &ProgressBar{
+// ExecuteWithProgressBar creates an instance of ProgressBar.
+func ExecuteWithProgressBar(task func(bar *ProgressBar) error, maxValue int64) (err error) {
+	bar := &ProgressBar{
 		epoch:           time.Now(),
 		barLength:       50,
-		total:           total,
-		progressChannel: make(chan (int64), 10),
+		maxValue:        maxValue,
+		interval:        time.Millisecond * 10,
+		progressChannel: make(chan int64, 10),
 	}
-	go pb.listen()
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go bar.listen(wg)
+	err = func() error {
+		defer close(bar.progressChannel)
+		return task(bar)
+	}()
+	wg.Wait()
 	return
 }
 
@@ -29,42 +37,31 @@ func NewProgressBar(total int64) (pb *ProgressBar) {
 type ProgressBar struct {
 	epoch           time.Time
 	barLength       int
-	total           int64
+	maxValue        int64
 	current         int64
 	speedCalculator SpeedCalculator
-	progressChannel chan (int64)
-	wg              sync.WaitGroup
+	progressChannel chan int64
+	interval        time.Duration
 }
 
-const interval = time.Millisecond * 1e2
-
-func (p *ProgressBar) listen() {
+func (p *ProgressBar) listen(wg *sync.WaitGroup) {
 	ts := time.Now()
 	for v := range p.progressChannel {
-		if time.Now().Sub(ts) < interval {
+		if time.Now().Sub(ts) < p.interval {
 			continue
 		}
-		p.printProgress(v)
+		p.print(v)
 		ts = time.Now()
 	}
+	p.print(p.current)
+	wg.Done()
 }
 
-// Close closes a progress bar.
-func (p *ProgressBar) Close() {
-	close(p.progressChannel)
-	p.printProgress(p.current)
-}
-
-// SetSpeedCalculator sets speed calculator.
-func (p *ProgressBar) SetSpeedCalculator(calc SpeedCalculator) {
-	p.speedCalculator = calc
-}
-
-func (p *ProgressBar) printProgress(current int64) {
+func (p *ProgressBar) print(current int64) {
 	progressBar := make([]byte, p.barLength)
-	comm.FillBytes(progressBar[:int(p.current*int64(p.barLength)/p.total)], '=')
+	comm.FillBytes(progressBar[:int(p.current*int64(p.barLength)/p.maxValue)], '=')
 	elapsed := time.Now().Sub(p.epoch)
-	text := fmt.Sprintf("\r[%s] %d%% %s", string(progressBar), current*100/p.total, comm.FormatTimeDuration(elapsed))
+	text := fmt.Sprintf("\r[%s] %d%% %s", string(progressBar), current*100/p.maxValue, comm.FormatTimeDuration(elapsed))
 	if p.speedCalculator != nil {
 		text += " " + p.speedCalculator(current, elapsed)
 	}
@@ -78,12 +75,17 @@ func (p *ProgressBar) printProgress(current int64) {
 	fmt.Print(text)
 }
 
+// SetSpeedCalculator sets speed calculator.
+func (p *ProgressBar) SetSpeedCalculator(calc SpeedCalculator) {
+	p.speedCalculator = calc
+}
+
 // SetProgress sets current progress.
 func (p *ProgressBar) SetProgress(current int64) {
 	if current < 0 {
 		p.current = 0
-	} else if current > p.total {
-		p.current = p.total
+	} else if current > p.maxValue {
+		p.current = p.maxValue
 	} else {
 		p.current = current
 	}
