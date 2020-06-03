@@ -30,6 +30,7 @@ func ExecuteWithProgressBar(task func(bar *ProgressBar) error, maxValue int64) (
 		return task(bar)
 	}()
 	wg.Wait()
+	fmt.Println()
 	return
 }
 
