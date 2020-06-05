@@ -1,6 +1,7 @@
 package console
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"sync"
@@ -13,67 +14,26 @@ import (
 // SpeedCalculator represents a function to calculate speed with total value and elapsed time.
 type SpeedCalculator func(n int64, elapsed time.Duration) string
 
-// ExecuteWithProgressBar creates an instance of ProgressBar.
-func ExecuteWithProgressBar(task func(bar *ProgressBar) error, maxValue int64) (err error) {
-	bar := &ProgressBar{
-		epoch:           time.Now(),
-		barLength:       50,
-		maxValue:        maxValue,
-		interval:        time.Millisecond * 10,
-		progressChannel: make(chan int64, 10),
+func NewProgressBar(maxValue int64) (bar *ProgressBar) {
+	bar = &ProgressBar{
+		epoch:     time.Now(),
+		barLength: 50,
+		maxValue:  maxValue,
 	}
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go bar.listen(wg)
-	err = func() error {
-		defer close(bar.progressChannel)
-		return task(bar)
-	}()
-	wg.Wait()
-	fmt.Println()
+	bar.print()
 	return
 }
 
 // ProgressBar can print progress bar in console.
 type ProgressBar struct {
 	epoch           time.Time
-	barLength       int
+	barLength       uint32
 	maxValue        int64
-	current         int64
+	value           int64
 	speedCalculator SpeedCalculator
-	progressChannel chan int64
-	interval        time.Duration
-}
-
-func (p *ProgressBar) listen(wg *sync.WaitGroup) {
-	ts := time.Now()
-	for v := range p.progressChannel {
-		if time.Now().Sub(ts) < p.interval {
-			continue
-		}
-		p.print(v)
-		ts = time.Now()
-	}
-	p.print(p.current)
-	wg.Done()
-}
-
-func (p *ProgressBar) print(current int64) {
-	progressBar := make([]byte, p.barLength)
-	comm.FillBytes(progressBar[:int(p.current*int64(p.barLength)/p.maxValue)], '=')
-	elapsed := time.Now().Sub(p.epoch)
-	text := fmt.Sprintf("\r[%s] %d%% %s", string(progressBar), current*100/p.maxValue, comm.FormatTimeDuration(elapsed))
-	if p.speedCalculator != nil {
-		text += " " + p.speedCalculator(current, elapsed)
-	}
-	width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		return
-	}
-	if width < len(text) {
-		text = text[:width]
-	}
-	fmt.Print(text)
+	percent         uint32
+	elapsed         time.Duration
+	lock            sync.Mutex
 }
 
 // SetSpeedCalculator sets speed calculator.
@@ -82,18 +42,75 @@ func (p *ProgressBar) SetSpeedCalculator(calc SpeedCalculator) {
 }
 
 // SetProgress sets current progress.
-func (p *ProgressBar) SetProgress(current int64) {
-	if current < 0 {
-		p.current = 0
-	} else if current > p.maxValue {
-		p.current = p.maxValue
-	} else {
-		p.current = current
+func (p *ProgressBar) SetProgress(val int64) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.value = val
+	if p.isChanged() {
+		p.print()
 	}
-	p.progressChannel <- p.current
 }
 
 // AddProgress adds value to current progress.
-func (p *ProgressBar) AddProgress(value int64) {
-	p.SetProgress(p.current + value)
+func (p *ProgressBar) AddProgress(delta int64) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.value += delta
+	if p.isChanged() {
+		p.print()
+	}
+}
+
+func (p *ProgressBar) isChanged() bool {
+	if p.value < 0 {
+		p.value = 0
+	} else if p.value > p.maxValue {
+		p.value = p.maxValue
+	}
+	percent := uint32(p.value * 100 / p.maxValue)
+	elapsed := time.Now().Sub(p.epoch)
+	if percent == p.percent && elapsed.Milliseconds() == p.elapsed.Milliseconds() {
+		return false
+	}
+	p.percent = percent
+	p.elapsed = elapsed
+	return true
+}
+
+func (p *ProgressBar) print() {
+	progressBar := make([]byte, p.barLength)
+	comm.FillBytes(progressBar[:p.percent*p.barLength/100], '=')
+	text := fmt.Sprintf("\r[%s] %d%% %s", string(progressBar), p.percent, formatDuration(p.elapsed))
+	if p.speedCalculator != nil {
+		text += " " + p.speedCalculator(p.value, p.elapsed)
+	}
+	if width, _, err := terminal.GetSize(int(os.Stdout.Fd())); err == nil {
+		textLen := len(text)
+		if textLen > width {
+			text = text[:width]
+		} else if textLen < width {
+			text += string(bytes.Repeat([]byte{0x20}, width-textLen))
+		}
+	}
+	fmt.Print(text)
+}
+
+const (
+	timeDurationFormat         = "%02d:%02d:%02d.%03d"
+	timeDurationWithDaysFormat = "%dd " + timeDurationFormat
+)
+
+func formatDuration(value time.Duration) string {
+	s, ms := div(value.Milliseconds(), 1000)
+	m, s := div(s, 60)
+	h, m := div(m, 60)
+	d, h := div(h, 24)
+	if d > 0 {
+		return fmt.Sprintf(timeDurationWithDaysFormat, d, h, m, s, ms)
+	}
+	return fmt.Sprintf(timeDurationFormat, h, m, s, ms)
+}
+
+func div(a, b int64) (int64, int64) {
+	return a / b, a % b
 }
