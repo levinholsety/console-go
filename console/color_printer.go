@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"os"
 )
 
 // Color represents a color in console.
@@ -14,8 +15,16 @@ const (
 
 // ColorPrinter can print string in specified background color and foreground color.
 type ColorPrinter struct {
-	bgColor int
-	fgColor int
+	file           *os.File
+	defaultBgColor Color
+	defaultFgColor Color
+	bgColor        Color
+	fgColor        Color
+}
+
+func (p *ColorPrinter) SetFile(file *os.File) *ColorPrinter {
+	p.file = file
+	return p
 }
 
 // Printf prints string to standard output.
@@ -30,29 +39,20 @@ func (p *ColorPrinter) Print(a ...interface{}) (n int, err error) {
 
 // Println prints string to standard output.
 func (p *ColorPrinter) Println(a ...interface{}) (n int, err error) {
-	n, err = p.Print(a...)
-	if err != nil {
-		return
-	}
-	m, err := fmt.Println()
-	if err != nil {
-		return
-	}
-	n += m
-	return
+	return p.Write([]byte(fmt.Sprintln(a...)))
 }
 
-// ColorPrint prints string in specified background color and foreground color.
-func ColorPrint(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
-	return NewColorPrinter(bgColor, fgColor).Print(a...)
-}
+// // ColorPrint prints string in specified background color and foreground color.
+// func ColorPrint(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
+// 	return NewColorPrinter(bgColor, fgColor).Print(a...)
+// }
 
-// ColorPrintln prints string in specified background color and foreground color.
-func ColorPrintln(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
-	return NewColorPrinter(bgColor, fgColor).Println(a...)
-}
+// // ColorPrintln prints string in specified background color and foreground color.
+// func ColorPrintln(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
+// 	return NewColorPrinter(bgColor, fgColor).Println(a...)
+// }
 
-// ColorPrintf prints string in specified background color and foreground color.
-func ColorPrintf(bgColor Color, fgColor Color, format string, a ...interface{}) (int, error) {
-	return NewColorPrinter(bgColor, fgColor).Printf(format, a...)
-}
+// // ColorPrintf prints string in specified background color and foreground color.
+// func ColorPrintf(bgColor Color, fgColor Color, format string, a ...interface{}) (int, error) {
+// 	return NewColorPrinter(bgColor, fgColor).Printf(format, a...)
+// }

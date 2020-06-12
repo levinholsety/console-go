@@ -32,21 +32,34 @@ const (
 )
 
 // NewColorPrinter creates a new ColorPrinter instance.
-func NewColorPrinter(bgColor Color, fgColor Color) *ColorPrinter {
-	if bgColor < 0 {
-		bgColor = 0
-	} else {
-		bgColor += 10
-	}
+func NewColorPrinter(file *os.File, fgColor Color) *ColorPrinter {
 	if fgColor < 0 {
 		fgColor = 0
 	}
 	return &ColorPrinter{
-		bgColor: int(bgColor),
-		fgColor: int(fgColor),
+		file:    file,
+		fgColor: fgColor,
 	}
 }
 
+func (p *ColorPrinter) SetBackgroundColor(color Color) *ColorPrinter {
+	if color < 0 {
+		p.bgColor = 0
+	} else {
+		p.bgColor = color + 10
+	}
+	return p
+}
+
+func (p *ColorPrinter) SetForegroundColor(color Color) *ColorPrinter {
+	if color < 0 {
+		p.fgColor = 0
+	} else {
+		p.fgColor = color
+	}
+	return p
+}
+
 func (p *ColorPrinter) Write(value []byte) (n int, err error) {
-	return os.Stdout.Write([]byte(fmt.Sprintf("\x1b[%d;%dm%s\x1b[0m", p.bgColor, p.fgColor, string(value))))
+	return p.file.Write([]byte(fmt.Sprintf("\x1b[%d;%dm%s\x1b[0m", p.bgColor, p.fgColor, string(value))))
 }

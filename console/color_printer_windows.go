@@ -1,8 +1,8 @@
 package console
 
 import (
-	"fmt"
 	"os"
+	"sync"
 	"syscall"
 
 	"golang.org/x/sys/windows"
@@ -29,54 +29,59 @@ const (
 )
 
 var (
-	stdout                = uintptr(syscall.Stdout)
-	defaultTextAttributes = func() uint16 {
-		info := new(windows.ConsoleScreenBufferInfo)
-		if err := windows.GetConsoleScreenBufferInfo(windows.Handle(stdout), info); err != nil {
-			err = fmt.Errorf("color printer init failed: %w", err)
-			fmt.Println("error:", err)
-			return 0x07
-		}
-		return info.Attributes
-	}()
-)
-
-var (
 	kernel32                    = syscall.NewLazyDLL("kernel32.dll")
 	procSetConsoleTextAttribute = kernel32.NewProc("SetConsoleTextAttribute")
 )
 
-func setConsoleTextAttribute(hConsoleOutput uintptr, wAttributes uintptr) error {
-	r, _, err := procSetConsoleTextAttribute.Call(hConsoleOutput, wAttributes)
-	if r == 0 {
-		return fmt.Errorf("set printer color failed: %w", err)
-	}
-	return nil
+func setConsoleTextAttribute(hConsoleOutput uintptr, wAttributes uintptr) {
+	procSetConsoleTextAttribute.Call(hConsoleOutput, wAttributes)
 }
 
-// NewColorPrinter creates a new ColorPrinter instance.
-func NewColorPrinter(bgColor Color, fgColor Color) *ColorPrinter {
-	if bgColor < 0 {
-		bgColor = Color(defaultTextAttributes) & 0o11110000
+func NewColorPrinter(file *os.File, fgColor Color) (prt *ColorPrinter) {
+	prt = &ColorPrinter{
+		file:    file,
+		fgColor: fgColor,
+	}
+	info := new(windows.ConsoleScreenBufferInfo)
+	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(file.Fd()), info); err == nil {
+		prt.defaultBgColor = Color(info.Attributes & 0b11110000)
+		prt.defaultFgColor = Color(info.Attributes & 0b1111)
 	} else {
-		bgColor <<= 4
+		prt.defaultBgColor = Black << 4
+		prt.defaultFgColor = White
 	}
-	if fgColor < 0 {
-		fgColor = Color(defaultTextAttributes) & 0o1111
+	prt.bgColor = prt.defaultBgColor
+	if prt.fgColor == DefaultColor {
+		prt.fgColor = prt.defaultFgColor
 	}
-	return &ColorPrinter{
-		bgColor: int(bgColor),
-		fgColor: int(fgColor),
+	return
+}
+
+var lock = new(sync.Mutex)
+
+func (p *ColorPrinter) SetBackgroundColor(color Color) *ColorPrinter {
+	if color == DefaultColor {
+		p.bgColor = p.defaultBgColor
+	} else {
+		p.bgColor = color << 4
 	}
+	return p
+}
+
+func (p *ColorPrinter) SetForegroundColor(color Color) *ColorPrinter {
+	if color == DefaultColor {
+		p.fgColor = p.defaultFgColor
+	} else {
+		p.fgColor = color
+	}
+	return p
 }
 
 func (p *ColorPrinter) Write(value []byte) (n int, err error) {
-	if err := setConsoleTextAttribute(stdout, uintptr(p.bgColor|p.fgColor)); err != nil {
-		fmt.Println("error:", err)
-	}
-	if n, err = os.Stdout.Write(value); err != nil {
-		return
-	}
-	setConsoleTextAttribute(stdout, uintptr(defaultTextAttributes))
+	lock.Lock()
+	defer lock.Unlock()
+	setConsoleTextAttribute(p.file.Fd(), uintptr(p.bgColor|p.fgColor))
+	n, err = p.file.Write(value)
+	setConsoleTextAttribute(p.file.Fd(), uintptr(p.defaultBgColor|p.defaultFgColor))
 	return
 }
