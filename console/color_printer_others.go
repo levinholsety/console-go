@@ -5,11 +5,12 @@ package console
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Colors
 const (
-	Black Color = iota + 30
+	Black Color = iota
 	Red
 	Green
 	Yellow
@@ -17,11 +18,7 @@ const (
 	Purple
 	Aqua
 	White
-)
-
-// Colors
-const (
-	Gray Color = iota + 30
+	Gray
 	LightRed
 	LightGreen
 	LightYellow
@@ -32,34 +29,42 @@ const (
 )
 
 // NewColorPrinter creates a new ColorPrinter instance.
-func NewColorPrinter(file *os.File, fgColor Color) *ColorPrinter {
-	if fgColor < 0 {
-		fgColor = 0
-	}
-	return &ColorPrinter{
-		file:    file,
-		fgColor: fgColor,
+func NewColorPrinter(file *os.File) ColorPrinter {
+	return &colorPrinter{
+		file: file,
 	}
 }
 
-func (p *ColorPrinter) SetBackgroundColor(color Color) *ColorPrinter {
-	if color < 0 {
-		p.bgColor = 0
-	} else {
-		p.bgColor = color + 10
-	}
+type colorPrinter struct {
+	file    *os.File
+	bgColor Color
+	fgColor Color
+}
+
+func (p *colorPrinter) SetBackgroundColor(color Color) ColorPrinter {
+	p.bgColor = color
 	return p
 }
 
-func (p *ColorPrinter) SetForegroundColor(color Color) *ColorPrinter {
-	if color < 0 {
-		p.fgColor = 0
-	} else {
-		p.fgColor = color
-	}
+func (p *colorPrinter) SetForegroundColor(color Color) ColorPrinter {
+	p.fgColor = color
 	return p
 }
 
-func (p *ColorPrinter) Write(value []byte) (n int, err error) {
-	return p.file.Write([]byte(fmt.Sprintf("\x1b[%d;%dm%s\x1b[0m", p.bgColor, p.fgColor, string(value))))
+func (p *colorPrinter) bgColorCode() string {
+	if p.bgColor < Gray {
+		return fmt.Sprintf("%d", p.bgColor+40)
+	}
+	return fmt.Sprintf("%d;1", p.bgColor+32)
+}
+
+func (p *colorPrinter) fgColorCode() string {
+	if p.fgColor < Gray {
+		return fmt.Sprintf("%d", p.fgColor+30)
+	}
+	return fmt.Sprintf("%d;1", p.fgColor+22)
+}
+
+func (p *colorPrinter) write(text string) (n int, err error) {
+	return p.file.Write([]byte(fmt.Sprintf("\033[%s;%sm%s\033[0m", p.bgColorCode(), p.fgColorCode(), strings.ReplaceAll(text, "\n", "\033[0m\n"))))
 }

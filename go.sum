@@ -1,5 +1,7 @@
 github.com/levinholsety/common-go v0.0.0-20200605021411-3a680ef2a7d0 h1:Rm+mHF5UxKhM2pixnktvNSfnTzp9fuoRY6i/QI63gt0=
 github.com/levinholsety/common-go v0.0.0-20200605021411-3a680ef2a7d0/go.mod h1:8g+nVas41Hg3evaqjneZuF4mJhQ79wylYnS3eBcmOhY=
+github.com/levinholsety/common-go v0.0.0-20200612043900-ca99cd01cadc h1:kv36ZW2RJClvEukkBJtj1Spn0vqvw7XjkfX/b6SsQao=
+github.com/levinholsety/common-go v0.0.0-20200612043900-ca99cd01cadc/go.mod h1:8g+nVas41Hg3evaqjneZuF4mJhQ79wylYnS3eBcmOhY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 h1:vEg9joUBmeBcK9iSJftGNf3coIG4HqZElCPehJsfAYM=
 golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

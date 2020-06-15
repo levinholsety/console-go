@@ -1,58 +1,66 @@
 package console
 
-import (
-	"fmt"
-	"os"
-)
+import "fmt"
 
 // Color represents a color in console.
 type Color int
 
-// DefaultColor
-const (
-	DefaultColor Color = -1
-)
-
-// ColorPrinter can print string in specified background color and foreground color.
-type ColorPrinter struct {
-	file           *os.File
-	defaultBgColor Color
-	defaultFgColor Color
-	bgColor        Color
-	fgColor        Color
+func (v Color) String() string {
+	switch v {
+	case Black:
+		return "Black"
+	case Blue:
+		return "Blue"
+	case Green:
+		return "Green"
+	case Aqua:
+		return "Aqua"
+	case Red:
+		return "Red"
+	case Purple:
+		return "Purple"
+	case Yellow:
+		return "Yellow"
+	case White:
+		return "White"
+	case Gray:
+		return "Gray"
+	case LightBlue:
+		return "LightBlue"
+	case LightGreen:
+		return "LightGreen"
+	case LightAqua:
+		return "LightAqua"
+	case LightRed:
+		return "LightRed"
+	case LightPurple:
+		return "LightPurple"
+	case LightYellow:
+		return "LightYellow"
+	case LightWhite:
+		return "LightWhite"
+	default:
+		return "Unknown"
+	}
 }
 
-func (p *ColorPrinter) SetFile(file *os.File) *ColorPrinter {
-	p.file = file
-	return p
+// ColorPrinter can print color text on console.
+type ColorPrinter interface {
+	SetBackgroundColor(color Color) ColorPrinter
+	SetForegroundColor(color Color) ColorPrinter
+	Printf(format string, a ...interface{}) (n int, err error)
+	Print(a ...interface{}) (n int, err error)
+	Println(a ...interface{}) (n int, err error)
 }
 
-// Printf prints string to standard output.
-func (p *ColorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
-	return p.Write([]byte(fmt.Sprintf(format, a...)))
+func (p *colorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
+	return p.write(fmt.Sprintf(format, a...))
 }
 
-// Print prints string to standard output.
-func (p *ColorPrinter) Print(a ...interface{}) (n int, err error) {
-	return p.Write([]byte(fmt.Sprint(a...)))
+func (p *colorPrinter) Print(a ...interface{}) (n int, err error) {
+	return p.write(fmt.Sprint(a...))
 }
 
-// Println prints string to standard output.
-func (p *ColorPrinter) Println(a ...interface{}) (n int, err error) {
-	return p.Write([]byte(fmt.Sprintln(a...)))
+func (p *colorPrinter) Println(a ...interface{}) (n int, err error) {
+	return p.write(fmt.Sprintln(a...))
 }
-
-// // ColorPrint prints string in specified background color and foreground color.
-// func ColorPrint(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
-// 	return NewColorPrinter(bgColor, fgColor).Print(a...)
-// }
-
-// // ColorPrintln prints string in specified background color and foreground color.
-// func ColorPrintln(bgColor Color, fgColor Color, a ...interface{}) (int, error) {
-// 	return NewColorPrinter(bgColor, fgColor).Println(a...)
-// }
-
-// // ColorPrintf prints string in specified background color and foreground color.
-// func ColorPrintf(bgColor Color, fgColor Color, format string, a ...interface{}) (int, error) {
-// 	return NewColorPrinter(bgColor, fgColor).Printf(format, a...)
-// }

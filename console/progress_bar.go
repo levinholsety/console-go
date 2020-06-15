@@ -14,6 +14,7 @@ import (
 // SpeedCalculator represents a function to calculate speed with total value and elapsed time.
 type SpeedCalculator func(n int64, elapsed time.Duration) string
 
+// NewProgressBar creates an instance of ProgressBar and returns it.
 func NewProgressBar(maxValue int64) (bar *ProgressBar) {
 	bar = &ProgressBar{
 		epoch:     time.Now(),
