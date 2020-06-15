@@ -10,7 +10,7 @@ import (
 
 // Colors
 const (
-	Black Color = iota
+	Black Color = iota + 1
 	Red
 	Green
 	Yellow
@@ -52,19 +52,37 @@ func (p *colorPrinter) SetForegroundColor(color Color) ColorPrinter {
 }
 
 func (p *colorPrinter) bgColorCode() string {
-	if p.bgColor < Gray {
-		return fmt.Sprintf("%d", p.bgColor+40)
+	if p.bgColor >= Black && p.bgColor <= White {
+		return fmt.Sprintf("%d", p.bgColor+39)
 	}
-	return fmt.Sprintf("%d;1", p.bgColor+32)
+	if p.bgColor >= Gray && p.bgColor <= LightWhite {
+		return fmt.Sprintf("%d;1", p.bgColor+31)
+	}
+	return ""
 }
 
 func (p *colorPrinter) fgColorCode() string {
-	if p.fgColor < Gray {
-		return fmt.Sprintf("%d", p.fgColor+30)
+	if p.fgColor >= Black && p.fgColor <= White {
+		return fmt.Sprintf("%d", p.fgColor+29)
 	}
-	return fmt.Sprintf("%d;1", p.fgColor+22)
+	if p.fgColor >= Gray && p.fgColor <= LightWhite {
+		return fmt.Sprintf("%d;1", p.fgColor+21)
+	}
+	return ""
 }
 
 func (p *colorPrinter) write(text string) (n int, err error) {
-	return p.file.Write([]byte(fmt.Sprintf("\033[%s;%sm%s\033[0m", p.bgColorCode(), p.fgColorCode(), strings.ReplaceAll(text, "\n", "\033[0m\n"))))
+	bgCode := p.bgColorCode()
+	fgCode := p.fgColorCode()
+	var code string
+	if len(bgCode) > 0 && len(fgCode) > 0 {
+		code = bgCode + ";" + fgCode
+	} else if len(bgCode) > 0 {
+		code = bgCode
+	} else if len(fgCode) > 0 {
+		code = fgCode
+	} else {
+		code = "0"
+	}
+	return p.file.Write([]byte(fmt.Sprintf("\033[%sm%s\033[0m", code, strings.ReplaceAll(text, "\n", fmt.Sprintf("\033[0m\n\033[%sm", code)))))
 }
