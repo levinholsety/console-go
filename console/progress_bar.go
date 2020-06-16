@@ -19,7 +19,7 @@ func NewProgressBar(maxValue int64) (bar *ProgressBar) {
 	bar = &ProgressBar{
 		epoch:     time.Now(),
 		barLength: 50,
-		maxValue:  maxValue,
+		MaxValue:  maxValue,
 	}
 	bar.print()
 	return
@@ -27,14 +27,20 @@ func NewProgressBar(maxValue int64) (bar *ProgressBar) {
 
 // ProgressBar can print progress bar in console.
 type ProgressBar struct {
+	prt             ColorPrinter
 	epoch           time.Time
 	barLength       uint32
-	maxValue        int64
+	MaxValue        int64
 	value           int64
 	speedCalculator SpeedCalculator
 	percent         uint32
 	elapsed         time.Duration
 	lock            sync.Mutex
+}
+
+// SetColorPrinter sets the color printer with which the current progress bar prints.
+func (p *ProgressBar) SetColorPrinter(prt ColorPrinter) {
+	p.prt = prt
 }
 
 // SetSpeedCalculator sets speed calculator.
@@ -65,10 +71,10 @@ func (p *ProgressBar) AddProgress(delta int64) {
 func (p *ProgressBar) isChanged() bool {
 	if p.value < 0 {
 		p.value = 0
-	} else if p.value > p.maxValue {
-		p.value = p.maxValue
+	} else if p.value > p.MaxValue {
+		p.value = p.MaxValue
 	}
-	percent := uint32(p.value * 100 / p.maxValue)
+	percent := uint32(p.value * 100 / p.MaxValue)
 	elapsed := time.Now().Sub(p.epoch)
 	if percent == p.percent && elapsed.Milliseconds() == p.elapsed.Milliseconds() {
 		return false
@@ -93,7 +99,11 @@ func (p *ProgressBar) print() {
 			text += string(bytes.Repeat([]byte{0x20}, width-textLen))
 		}
 	}
-	fmt.Print(text)
+	if p.prt == nil {
+		fmt.Print(text)
+	} else {
+		p.prt.Print(text)
+	}
 }
 
 const (

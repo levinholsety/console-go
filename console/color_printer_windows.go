@@ -83,7 +83,6 @@ func (p *colorPrinter) write(text string) (n int, err error) {
 	lastIndex := len(lines) - 1
 	for i, line := range lines {
 		var count int
-		line = strings.TrimSpace(line)
 		setConsoleTextAttribute(p.file.Fd(), p.attributes())
 		count, err = p.file.Write([]byte(line))
 		if err != nil {
