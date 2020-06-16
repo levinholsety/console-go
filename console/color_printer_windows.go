@@ -2,6 +2,7 @@ package console
 
 import (
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -44,47 +45,59 @@ func NewColorPrinter(file *os.File) ColorPrinter {
 	}
 	info := new(windows.ConsoleScreenBufferInfo)
 	if err := windows.GetConsoleScreenBufferInfo(windows.Handle(file.Fd()), info); err == nil {
-		p.defBgColor, p.defFgColor = Color(info.Attributes>>4), Color(info.Attributes&0b1111)
+		p.defFgColor, p.defBgColor = Color(info.Attributes&0b1111), Color(info.Attributes>>4)
 	} else {
-		p.defBgColor, p.defFgColor = Black, White
+		p.defFgColor, p.defBgColor = White, Black
 	}
-	p.bgColor, p.fgColor = p.defBgColor, p.defFgColor
+	p.fgColor, p.bgColor = p.defFgColor, p.defBgColor
 	return p
 }
 
 type colorPrinter struct {
 	file       *os.File
-	defBgColor Color
 	defFgColor Color
-	bgColor    Color
+	defBgColor Color
 	fgColor    Color
+	bgColor    Color
 }
 
-func (p *colorPrinter) SetBackgroundColor(color Color) ColorPrinter {
-	p.bgColor = color
-	return p
-}
-
-func (p *colorPrinter) SetForegroundColor(color Color) ColorPrinter {
-	p.fgColor = color
+func (p *colorPrinter) ResetColors() ColorPrinter {
+	p.fgColor, p.bgColor = p.defFgColor, p.defBgColor
 	return p
 }
 
 var lock = new(sync.Mutex)
 
 func (p *colorPrinter) attributes() uintptr {
-	return uintptr(p.bgColor<<4 | p.fgColor)
+	return uintptr(p.fgColor | p.bgColor<<4)
 }
 
 func (p *colorPrinter) defAttributes() uintptr {
-	return uintptr(p.defBgColor<<4 | p.defFgColor)
+	return uintptr(p.defFgColor | p.defBgColor<<4)
 }
 
 func (p *colorPrinter) write(text string) (n int, err error) {
 	lock.Lock()
 	defer lock.Unlock()
-	setConsoleTextAttribute(p.file.Fd(), p.attributes())
-	n, err = p.file.Write([]byte(text))
-	setConsoleTextAttribute(p.file.Fd(), p.defAttributes())
+	lines := strings.Split(text, "\n")
+	lastIndex := len(lines) - 1
+	for i, line := range lines {
+		var count int
+		line = strings.TrimSpace(line)
+		setConsoleTextAttribute(p.file.Fd(), p.attributes())
+		count, err = p.file.Write([]byte(line))
+		if err != nil {
+			return
+		}
+		n += count
+		setConsoleTextAttribute(p.file.Fd(), p.defAttributes())
+		if i < lastIndex {
+			count, err = p.file.Write([]byte{'\n'})
+			if err != nil {
+				return
+			}
+			n += count
+		}
+	}
 	return
 }

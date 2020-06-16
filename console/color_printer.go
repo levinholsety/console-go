@@ -48,9 +48,20 @@ func (v Color) String() string {
 type ColorPrinter interface {
 	SetBackgroundColor(color Color) ColorPrinter
 	SetForegroundColor(color Color) ColorPrinter
+	ResetColors() ColorPrinter
 	Printf(format string, a ...interface{}) (n int, err error)
 	Print(a ...interface{}) (n int, err error)
 	Println(a ...interface{}) (n int, err error)
+}
+
+func (p *colorPrinter) SetBackgroundColor(color Color) ColorPrinter {
+	p.bgColor = color
+	return p
+}
+
+func (p *colorPrinter) SetForegroundColor(color Color) ColorPrinter {
+	p.fgColor = color
+	return p
 }
 
 func (p *colorPrinter) Printf(format string, a ...interface{}) (n int, err error) {
