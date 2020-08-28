@@ -1,9 +1,9 @@
 module github.com/levinholsety/console-go
 
-go 1.13
+go 1.15
 
 require (
-	github.com/levinholsety/common-go v0.0.0-20200612043900-ca99cd01cadc
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
+	github.com/levinholsety/common-go v0.0.0-20200828043416-842d43046af3
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
+	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 )

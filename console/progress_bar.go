@@ -86,7 +86,12 @@ func (p *ProgressBar) isChanged() bool {
 
 func (p *ProgressBar) print() {
 	progressBar := make([]byte, p.barLength)
-	comm.FillBytes(progressBar[:p.percent*p.barLength/100], '=')
+	length := p.percent * p.barLength / 100
+	comm.FillBytes(progressBar[:length], '=')
+	comm.FillBytes(progressBar[length:], ' ')
+	if length > 0 && length < p.barLength {
+		progressBar[length-1] = '>'
+	}
 	text := fmt.Sprintf("\r[%s] %d%% %s", string(progressBar), p.percent, formatDuration(p.elapsed))
 	if p.speedCalculator != nil {
 		text += " " + p.speedCalculator(p.value, p.elapsed)
@@ -124,4 +129,20 @@ func formatDuration(value time.Duration) string {
 
 func div(a, b int64) (int64, int64) {
 	return a / b, a % b
+}
+
+// IOSpeedCalculator calculates IO speed.
+func IOSpeedCalculator(n int64, elapsed time.Duration) string {
+	if elapsed == 0 {
+		return ""
+	}
+	return "@ " + comm.FormatIOSpeed(comm.CalculateIOSpeed(n, elapsed), 0)
+}
+
+// CountSpeedCalculator calculates speed of count per second.
+func CountSpeedCalculator(n int64, elapsed time.Duration) string {
+	if elapsed == 0 {
+		return ""
+	}
+	return fmt.Sprintf("@ %d file(s)/s", n*int64(time.Second)/int64(elapsed))
 }
